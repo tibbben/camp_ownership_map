@@ -70,7 +70,7 @@ def main():
     file = parcel_file.split("/")[-1].split(".")[0]
     ext = parcel_file.split("/")[-1].split(".")[1]
     if ext == "json":
-        with (parcel_file, 'r') as f:
+        with open(parcel_file, 'r') as f:
             data = json.load(f)
         parcels = pd.json_normalize(data['features'])
         rename = {}
