@@ -23,10 +23,10 @@ this is a five column csv file:
 The `<filter expression>` is constructed as follows:
 | Filter              | Action            |
 |:--------------------| :---------------- 
-| `MATCH TEXT[|...][|...]` | Contains MATCH TEXT in true_owner_1 |
-| `MATCH TEXT!NOT MATCH TEXT[|...][|...]` | Contains MATCH TEXT in true_owner_1 `AND` does not contain NOT MATCH TEXT in true_owner_1 |
-| `MATCH TRUE&&MATCH TEXT 2[|...][|...]` | Contains MATCH TEXT in true_owner_1 `AND` contains MATCH TEXT 2 in true_owner_2|
-| `MATCH TEXT&&!NOT MATCH TEXT 2[|...][|...]` | Contains MATCH TEXT in true_owner_1 `AND` does not contain NOT MATCH TEXT 2 in true_owner_2|
+| `MATCH TEXT[\|...][\|...]` | Contains MATCH TEXT in true_owner_1 |
+| `MATCH TEXT!NOT MATCH TEXT[\|...][\|...]` | Contains MATCH TEXT in true_owner_1 `AND` does not contain NOT MATCH TEXT in true_owner_1 |
+| `MATCH TRUE&&MATCH TEXT 2[\|...][\|...]` | Contains MATCH TEXT in true_owner_1 `AND` contains MATCH TEXT 2 in true_owner_2|
+| `MATCH TEXT&&!NOT MATCH TEXT 2[\|...][\|...]` | Contains MATCH TEXT in true_owner_1 `AND` does not contain NOT MATCH TEXT 2 in true_owner_2|
 
 notes:
 - logic is always `OR` for lists delimited by the `|` character 
