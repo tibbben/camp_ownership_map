@@ -79,7 +79,7 @@ def main():
         parcels = parcels.rename(columns=rename)
     elif ext == "csv":
         parcels = pd.read_csv(parcel_file, low_memory=False)
-    categories = pd.read_csv('OwnershipMap.csv')
+    categories = pd.read_csv('csv/ownership_map.csv')
 
     owner_filters = assign_ownership(parcels,categories)
     
