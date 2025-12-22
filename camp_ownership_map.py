@@ -29,7 +29,7 @@ def create_condition(owner, parcels):
                     lb = lb & ~parcels['true_owner2'].str.contains(owner2,na=False)
         lb = (lb)
             
-    return lb.fillna(False)
+    return lb.fillna(False).infer_objects(copy=False)
 
 def assign_ownership(parcels,categories):
     '''Assign ownership in the categories to parcels.'''
