@@ -1,6 +1,34 @@
 import pandas as pd
 import sys
 import json
+
+camp_columns = [
+    "mdc_county_zone",
+    "mdc_county_zone_desc",
+    "mdc_municipal_zone",
+    "mdc_municipal_zone_desc",
+    "fema_flood_zone",
+    "mdc_qualified_opportunity_zones",
+    "mdc_neighborhood_name",
+    "mdc_municipal_boundary_name",
+    "com_neighborhood_name",
+    "cce_land_use",
+    "elevation",
+    "exclude",
+    "include",
+    "mdc_road_id",
+    "mdc_road_type",
+    "mdc_street_id",
+    "mdc_street_type",
+    "mdc_municipal_park_folio",
+    "mdc_county_park_folio",
+    "fmla_area_type",
+    "mdc_urban_growth_boundary",
+    "camp_ownership",
+    "camp_categories",
+    "shape_area",
+    "shape_length"
+]
         
 def create_condition(owner, parcels):
     '''Create a conditional array to filter the parcels dataframe for an ownership
@@ -29,7 +57,8 @@ def create_condition(owner, parcels):
                     lb = lb & ~parcels['true_owner2'].str.contains(owner2,na=False)
         lb = (lb)
             
-    return lb.fillna(False).infer_objects(copy=False)
+    #return lb.infer_objects(copy=False)
+    return lb.astype(bool).fillna(False)
 
 def assign_ownership(parcels,categories):
     '''Assign ownership in the categories to parcels.'''
@@ -57,19 +86,40 @@ def assign_ownership(parcels,categories):
     
     return categories.apply(filter_and_assign, parcels=parcels, axis=1)
 
+def exclude(parcels,exclusion):
+    '''add exclusion filters to exclude column in parcels'''
+    
+    def filter_and_assign(exclude, parcels):
+        '''filter on one exclusion and assign value to exclude'''
+        
+        print(exclude['Exclusion'])
+        b = (parcels['camp_ownership'] == '') & \
+             (parcels['true_owner1'].str.contains(exclude['Exclusion'],case=False) | \
+             parcels['true_owner2'].str.contains(exclude['Exclusion'],case=False) | \
+             parcels['true_owner3'].str.contains(exclude['Exclusion'],case=False) )
+        b = b.astype(bool).fillna(False)
+        
+        parcels.loc[b,'exclude'] = f"|{exclude['Exclusion']}|" 
+        
+    if 'exclude' not in parcels: parcels['exclude'] = ''
+    exclusion.apply(filter_and_assign, parcels=parcels, axis=1)
+
 def main():
     '''Read the parcel and categegory files and process.'''
 
     if len(sys.argv) == 2:
         parcel_file = sys.argv[1]
     else: # default for testing
-        parcel_file = "LAND_CustomParcels_Final_2021_Tim.csv"
+        base_path = "D:/Sync/gitRepos/projects/gdsc/_localdata"
+        parcel_file = f"{base_path}/data/mdc_parcels_camp_filtered/derived/mdc_parcels_camp_filtered.json"
 
     # load test parcel data and category map
     path = ("/").join(parcel_file.split("/")[:-1])
+    if path == "": path = "./" 
     file = parcel_file.split("/")[-1].split(".")[0]
     ext = parcel_file.split("/")[-1].split(".")[1]
-    if ext == "json":
+    print(path,file,ext)
+    if "json" in ext:
         with open(parcel_file, 'r') as f:
             data = json.load(f)
         parcels = pd.json_normalize(data['features'])
@@ -81,23 +131,28 @@ def main():
         parcels = pd.read_csv(parcel_file, low_memory=False)
     categories = pd.read_csv('csv/ownership_map.csv')
 
+    # assign ownership according to the ownershipmap.csv
     owner_filters = assign_ownership(parcels,categories)
     
     # give feedback
     #for owner_filter in owner_filters:
     #    print((
     #        f"{owner_filter} "
-    #        f"original {len(parcels[parcels['Ownership']==owner_filter])} "
-    #        f"test {len(parcels[parcels['test_ownership']==owner_filter])}"
+    #        f"original {len(parcels[parcels['Ownership'].str.strip()==owner_filter])} "
+    #        f"test {len(parcels[parcels['camp_ownership'].str.strip()==owner_filter])}"
     #    ))
+        
+    # add final exclude conditions to exclude field
+    exclusion = pd.read_csv('csv/exclusion.csv')
+    exclude(parcels,exclusion)
 
-    if ext == "json":
+    if "json" in ext:
 
         def restructure(row):
             properties = {}
             for col in rename:
                 if 'properties' in col:
-                    prop = rename[col].upper() if rename[col] not in ['shape_area','shape_length'] else rename[col]
+                    prop = rename[col].upper() if rename[col] not in camp_columns else rename[col]
                     properties[prop] = row[rename[col]]
             properties['camp_ownership'] = row['camp_ownership']
             properties['camp_categories'] = row['camp_categories']
