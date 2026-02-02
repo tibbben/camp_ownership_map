@@ -83,16 +83,8 @@ def assign_ownership(parcels,categories):
     # add columns for new categories
     parcels['camp_ownership'] = ''
     parcels['camp_categories'] = ''
-
-    # apyly filters and assign ownership
-    assigned = categories.apply(filter_and_assign, parcels=parcels, axis=1)
-
-    # catch all remaining religious organizations
-    b = assigned['dor_desc'].str.contains("RELIGIOUS.*")
-    assigned.loc[b,'camp_ownership'] = "Religious"
-    assigned.loc[b,'camp_categories'] = "Institutional"
     
-    return assigned
+    return categories.apply(filter_and_assign, parcels=parcels, axis=1)
 
 def exclude(parcels,exclusion):
     '''add exclusion filters to exclude column in parcels'''
@@ -142,6 +134,11 @@ def main():
     # assign ownership according to the ownershipmap.csv
     owner_filters = assign_ownership(parcels,categories)
     
+    # catch all remaining religious organizations
+    b = parcels['dor_desc'].str.contains("RELIGIOUS.*",na=False)
+    parcels.loc[b,'camp_ownership'] = "Religious"
+    parcels.loc[b,'camp_categories'] = "Institutional"
+
     # give feedback
     #for owner_filter in owner_filters:
     #    print((
