@@ -83,8 +83,16 @@ def assign_ownership(parcels,categories):
     # add columns for new categories
     parcels['camp_ownership'] = ''
     parcels['camp_categories'] = ''
+
+    # apyly filters and assign ownership
+    assigned = categories.apply(filter_and_assign, parcels=parcels, axis=1)
+
+    # catch all remaining religious organizations
+    b = assigned['dor_desc'].str.contains("RELIGIOUS.*")
+    assigned.loc[b,'camp_ownership'] = "Religious"
+    assigned.loc[b,'camp_categories'] = "Institutional"
     
-    return categories.apply(filter_and_assign, parcels=parcels, axis=1)
+    return assigned
 
 def exclude(parcels,exclusion):
     '''add exclusion filters to exclude column in parcels'''
