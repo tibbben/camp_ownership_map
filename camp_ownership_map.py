@@ -92,9 +92,9 @@ def exclude(parcels,exclusion):
     def filter_and_assign(exclude, parcels):
         '''filter on one exclusion and assign value to exclude'''
         
-        print(exclude['Exclusion'])
+        # print(exclude['Exclusion'])
         b = (parcels['camp_ownership'] == '') & \
-             (parcels['true_owner1'].str.contains(exclude['Exclusion'],case=False) | \
+            (parcels['true_owner1'].str.contains(exclude['Exclusion'],case=False) | \
              parcels['true_owner2'].str.contains(exclude['Exclusion'],case=False) | \
              parcels['true_owner3'].str.contains(exclude['Exclusion'],case=False) )
         b = b.astype(bool).fillna(False)
