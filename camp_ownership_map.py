@@ -93,10 +93,10 @@ def exclude(parcels,exclusion):
         '''filter on one exclusion and assign value to exclude'''
         
         # print(exclude['Exclusion'])
-        b = (parcels['camp_ownership'] == '') & \
-            (parcels['true_owner1'].str.contains(exclude['Exclusion'],case=False) | \
+        b = (parcels['true_owner1'].str.contains(exclude['Exclusion'],case=False) | \
              parcels['true_owner2'].str.contains(exclude['Exclusion'],case=False) | \
              parcels['true_owner3'].str.contains(exclude['Exclusion'],case=False) )
+        if not exclude['Global']: b = b & (parcels['camp_ownership'] == '')
         b = b.astype(bool).fillna(False)
         
         parcels.loc[b,'exclude'] = f"|{exclude['Exclusion']}|" 
