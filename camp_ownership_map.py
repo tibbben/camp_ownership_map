@@ -52,7 +52,8 @@ def create_condition(owner, parcels):
                 lb = lb & parcels['true_owner2'].str.contains(owner2)
             else:
                 owner2s = owner2.split('!')
-                lb = lb & parcels['true_owner2'].str.contains(owner2s[0],na=False)
+                if len(owner2s[0]) > 0:
+                    lb = lb & parcels['true_owner2'].str.contains(owner2s[0],na=False)
                 for owner2 in owner2s[1:]:
                     lb = lb & ~parcels['true_owner2'].str.contains(owner2,na=False)
         lb = (lb)
