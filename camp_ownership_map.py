@@ -24,6 +24,7 @@ camp_columns = [
     "mdc_county_park_folio",
     "fmla_area_type",
     "mdc_urban_growth_boundary",
+    "mdc_building_density",
     "camp_ownership",
     "camp_categories",
     "shape_area",
