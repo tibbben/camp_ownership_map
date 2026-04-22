@@ -27,6 +27,9 @@ camp_columns = [
     "mdc_building_density",
     "camp_ownership",
     "camp_categories",
+    "underutilized",
+    "spatial",
+    "regulatory",
     "shape_area",
     "shape_length"
 ]
@@ -152,6 +155,26 @@ def main():
     # add final exclude conditions to exclude field
     exclusion = pd.read_csv('csv/exclusion.csv')
     exclude(parcels,exclusion)
+    
+    # filter out unwanted parcels
+    parcels = parcels[
+        (
+            (parcels['exclude'].isna()) | 
+            (parcels['exclude'].str.len() == 0)
+        ) &
+        (parcels['camp_ownership'].str.len() > 0)
+    ]
+    
+    # add under utilization
+    parcels['spatial'] = (parcels['building_actual_area']/parcels['lot_size'] < 0.25)
+    parcels['regulatory'] = (
+        parcels[(~parcels['mdc_building_density'].isna()) & (~parcels['unit_count'].isna())]['unit_count'] < 
+        parcels[(~parcels['mdc_building_density'].isna()) & (~parcels['unit_count'].isna())]['mdc_building_density']
+    )
+    parcels['underutilized'] = ""
+    parcels.loc[(parcels['spatial'] == True),'underutilized'] += "|spatial"
+    parcels.loc[(parcels['regulatory'] == True),'underutilized'] += "|regulatory"
+    parcels['underutilized'] = parcels['underutilized'].str[1:]
 
     if "json" in ext:
 
@@ -163,6 +186,9 @@ def main():
                     properties[prop] = row[rename[col]]
             properties['camp_ownership'] = row['camp_ownership']
             properties['camp_categories'] = row['camp_categories']
+            properties['underutilized'] = row['underutilized']
+            properties['spatial'] = row['spatial']
+            properties['regulatory'] = row['regulatory']
             return {
                 "type": "Feature",
                 "properties": properties,
