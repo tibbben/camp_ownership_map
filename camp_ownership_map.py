@@ -162,8 +162,9 @@ def main():
             (parcels['exclude'].isna()) | 
             (parcels['exclude'].str.len() == 0)
         ) &
-        (parcels['camp_ownership'].str.len() > 0)
-    ]
+        (parcels['camp_ownership'].str.len() > 0) &
+        (parcels['year_built'] != 9999)
+    ].copy()
     
     # add under utilization
     parcels['spatial'] = (parcels['building_actual_area']/parcels['lot_size'] < 0.25)
