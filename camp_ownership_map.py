@@ -175,6 +175,7 @@ def main():
     parcels['underutilized'] = ""
     parcels.loc[(parcels['spatial'] == True),'underutilized'] += "|spatial"
     parcels.loc[(parcels['regulatory'] == True),'underutilized'] += "|regulatory"
+    parcels.loc[((parcels['year_built'] == 0) & (parcels['building_actual_area'] == 0)),'underutilized'] += "|vacant"
     parcels['underutilized'] = parcels['underutilized'].str[1:]
 
     if "json" in ext:
