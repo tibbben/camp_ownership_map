@@ -177,6 +177,9 @@ def main():
     parcels.loc[(parcels['regulatory'] == True),'underutilized'] += "|regulatory"
     parcels.loc[((parcels['year_built'] == 0) & (parcels['building_actual_area'] == 0)),'underutilized'] += "|vacant"
     parcels['underutilized'] = parcels['underutilized'].str[1:]
+    
+    # and filter out underutilized
+    parcels = parcels[parcels['underutilized'].str.len() > 0].copy()
 
     if "json" in ext:
 
