@@ -167,6 +167,7 @@ def main():
     ].copy()
     
     # add under utilization
+    parcels['spatial_ratio'] = parcels['building_actual_area']/parcels['lot_size']
     parcels['spatial'] = (parcels['building_actual_area']/parcels['lot_size'] < 0.25)
     parcels['regulatory'] = (
         parcels[(~parcels['mdc_building_density'].isna()) & (~parcels['unit_count'].isna())]['unit_count'] < 
