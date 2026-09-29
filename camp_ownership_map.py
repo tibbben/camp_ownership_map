@@ -1,7 +1,42 @@
+# -*- coding: utf-8 -*-
+
+"""
+Module Name: camp_ownership_map.py
+Description: Filters the ownership columns in the Miami-Dade County parcels and assigns
+             a standard set of categories for the Climate Equity & Mapping Platform
+             (CAMP) created by the Univeristy of Miami Office of Civic and Community 
+             Engagement (CCE). There are three main steps in the pipeline:
+             
+             1. predefined ownership cagtegories are assigned to the parcels (see csv/ownership_map.cs)
+             2. an exclusion filter is run to remove certain types of owners (see csv/exclusion.csv)
+             3. underutilization catgories are assigend based on predefined criteria. See:
+                https://miami.app.box.com/integrations/officeonline/openOfficeOnline?fileId=1676462145432
+      
+The results are seved to:
+    base_path/data/mdc_parcels_camp_ownership/download/mdc_parcels_camp_ownership.json
+
+Usage:
+    python camp_ownership_map.py /path/to/mdc_parcels_camp_filtered.json
+
+Dependencies:
+    - pandas >= 2.0
+"""
+
+# Metadata
+__author__ = "Tim Norris"
+__copyright__ = "Copyright 2026, University of Miami CCE and University of Miami IDSC"
+__credits__ = ["Chelsea Lafrance"]
+__license__ = "MIT"
+__version__ = "1.0.0"
+__maintainer__ = "Tim Norris"
+__email__ = "tnorris@miami.edu"
+__status__ = "Production"
+
 import pandas as pd
 import sys
 import json
 
+# could br read from metadata ...
 camp_columns = [
     "mdc_county_zone",
     "mdc_county_zone_desc",
@@ -34,9 +69,18 @@ camp_columns = [
     "shape_length"
 ]
         
-def create_condition(owner, parcels):
-    '''Create a conditional array to filter the parcels dataframe for an ownership
-    category using a formatted string from the OwnsershipMap file.'''
+def create_condition(owner: str, parcels: pd.DataFrame) -> pd.Series:
+    """
+    py:function:: create_condition(owner, parcels)
+    
+    Create a conditional array to filter the parcels dataframe for an ownership
+    category using a formatted string from the OwnsershipMap file.
+
+    :param str owner: a stricly formatted string that defines a filter combination
+    :param parcels pd.DataFrame: the parcels dataframe
+    :return: a boolean series for the parcels built from the string
+    :rtype: pd.Series
+    """
     
     owner = owner.split('&&')
     
@@ -65,11 +109,24 @@ def create_condition(owner, parcels):
     #return lb.infer_objects(copy=False)
     return lb.astype(bool).fillna(False)
 
-def assign_ownership(parcels,categories):
-    '''Assign ownership in the categories to parcels.'''
+def assign_ownership(parcels: pd.DataFrame, categories: pd.DataFrame) -> pd.DataFrame:
+    """
+    py:function:: assign_ownership(parcels, categories)
     
-    def filter_and_assign(category, parcels):
-        '''Filter on one ownership and assign the ownership category.'''
+    Assign ownership from the predefined categories to parcels.
+
+    :param parcels pd.DataFrame: the parcels dataframe
+    :param categories pd.DataFrame: the ownership map categories dataframe
+    :return: the updated parcels dataframe
+    :rtype: pd.DataFrame
+    """
+    
+    def filter_and_assign(category: pd.Series, parcels: pd.DataFrame) -> str:
+        """
+        py:function:: filter_and_assign(category, parcels)
+    
+        Filter on one ownership and assign the ownership category.
+        """
         
         true_owner = category['true_owner[123]'].split('|')
         # print(category['Ownership'])
@@ -91,11 +148,24 @@ def assign_ownership(parcels,categories):
     
     return categories.apply(filter_and_assign, parcels=parcels, axis=1)
 
-def exclude(parcels,exclusion):
-    '''add exclusion filters to exclude column in parcels'''
+def exclude(parcels: pd.DataFrame, exclusion: pd.DataFrame) -> None:
+    """
+    py:function:: exclude(parcels,exclusion)
     
-    def filter_and_assign(exclude, parcels):
-        '''filter on one exclusion and assign value to exclude'''
+    Add exclusion filters to exclude column in parcels
+
+    :param parcels pd.DataFrame: the parcels dataframe
+    :param exclusion pd.DataFrame: the set of conditions for exclusion
+    :return: the parcels dataframe is updated in place
+    :rtype: None
+    """
+    
+    def filter_and_assign(exclude: pd.Series, parcels: pd.DataFrame) -> None:
+        """
+        py:function:: filter_and_assign(exclude, parcels)
+        
+        filter on one exclusion and assign value to exclude
+        """
         
         # print(exclude['Exclusion'])
         b = (parcels['true_owner1'].str.contains(exclude['Exclusion'],case=False) | \
@@ -103,19 +173,36 @@ def exclude(parcels,exclusion):
              parcels['true_owner3'].str.contains(exclude['Exclusion'],case=False) )
         if not exclude['Global']: b = b & (parcels['camp_ownership'] == '')
         b = b.astype(bool).fillna(False)
-        
+
+        # directly update the parcels df
         parcels.loc[b,'exclude'] = f"|{exclude['Exclusion']}|" 
         
     if 'exclude' not in parcels: parcels['exclude'] = ''
     exclusion.apply(filter_and_assign, parcels=parcels, axis=1)
 
 def main():
-    '''Read the parcel and categegory files and process.'''
+    """
+    py:function:: main()
+    
+    Read the parcel and categegory files and process. There are three main steps in
+    the pipeline:
+      1. predefined ownership cagtegories are assigned to the parcels (see csv/ownership_map.cs)
+      2. an exclusion filter is run to remove certain types of owners (see csv/exclusion.csv)
+      3. underutilization catgories are assigend based on predefined criteria. See:
+         https://miami.app.box.com/integrations/officeonline/openOfficeOnline?fileId=1676462145432
+      
+    The results are seaved to:
+      base_path/data/mdc_parcels_camp_ownership/download/mdc_parcels_camp_ownership.json
+
+    :return: the updated parcels are saved to a file
+    :rtype: None
+    """
 
     if len(sys.argv) == 2:
         parcel_file = sys.argv[1]
     else: # default for testing
         base_path = "D:/Sync/gitRepos/projects/gdsc/_localdata"
+        #base_path = "/Users/tibben/Documents/Sync/UMCCS/gdsc/_localdata"
         parcel_file = f"{base_path}/data/mdc_parcels_camp_filtered/derived/mdc_parcels_camp_filtered.json"
 
     # load test parcel data and category map
@@ -166,13 +253,39 @@ def main():
         (parcels['year_built'] != 9999)
     ].copy()
     
-    # add under utilization
-    parcels['spatial_ratio'] = parcels['building_actual_area']/parcels['lot_size']
+    # add under utilization from:
+    # https://miami.app.box.com/integrations/officeonline/openOfficeOnline?fileId=1676462145432
+
+    # SPATIAL underutilized land
+
+    # all parcels
     parcels['spatial'] = (parcels['building_actual_area']/parcels['lot_size'] < 0.25)
+
+    # religious and school board exception
+    parcels.loc[
+        parcels['camp_ownership'].isin(["Religious", "School Board"]),
+        'spatial'
+    ] = (parcels['building_actual_area']/parcels['lot_size'] < 0.15)
+
+    # MARKET underutilized land 
+    # TODO
+
+    # REGULATORY underutilized land 
+
+    # Unincorporated Dade building density
+    building_allowed = (parcels['mdc_building_density'] * parcels['lot_size']) / 43560
+
+    # Municipal density
+    municipal_density_numeric = pd.to_numeric(parcels['mdc_municipal_zone_density'], errors='coerce')
+    municipal_allowed = (municipal_density_numeric * parcels['lot_size']) / 43560
+
+    # assign to regulatory
     parcels['regulatory'] = (
-        parcels[(~parcels['mdc_building_density'].isna()) & (~parcels['unit_count'].isna())]['unit_count'] < 
-        parcels[(~parcels['mdc_building_density'].isna()) & (~parcels['unit_count'].isna())]['mdc_building_density']
-    )
+        (parcels['unit_count'] < building_allowed) | 
+        (parcels['unit_count'] < municipal_allowed)
+    ).astype(bool)
+    
+    # Combine into column for categorization
     parcels['underutilized'] = ""
     parcels.loc[(parcels['spatial'] == True),'underutilized'] += "|spatial"
     parcels.loc[(parcels['regulatory'] == True),'underutilized'] += "|regulatory"
